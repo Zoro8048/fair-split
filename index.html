@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FairSplit">
+  <meta name="theme-color" content="#000000">
+  <title>FairSplit — Zero-Backend P2P Expense Splitter</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header: Dynamic Island / Notch Aware -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon-badge">⚖️</div>
+        <div class="brand-title">Fair<span>Split</span></div>
+      </div>
+
+      <button type="button" class="group-pill-btn" id="btn-header-groups" title="Switch or Create Groups">
+        <span>📁</span>
+        <span class="group-pill-name" id="header-group-title">Loading...</span>
+        <span class="group-pill-chevron">▾</span>
+      </button>
+
+      <div class="header-actions">
+        <button type="button" class="btn-icon" id="btn-header-members" title="Group Members" aria-label="Group Members">
+          👥
+        </button>
+      </div>
+    </header>
+
+    <!-- Segmented Tab Bar Slot -->
+    <div class="segmented-bar-slot">
+      <div id="segmented-control-slot"></div>
+    </div>
+
+    <!-- Main View Stage (Scrollable) -->
+    <main class="main-content" id="view-stage">
+      <!-- Dynamically rendered via app.js -->
+    </main>
+
+    <!-- Bottom Navigation Bar with Prominent Floating Add Button -->
+    <nav class="bottom-nav">
+      <button type="button" class="nav-action-btn" id="nav-btn-sync" aria-label="P2P QR Sync">
+        <span class="nav-btn-icon">🔄</span>
+        <span class="nav-btn-label">QR Sync</span>
+      </button>
+
+      <button type="button" class="nav-add-primary" id="btn-floating-add" aria-label="Add Expense" title="Add Expense">
+        <span class="add-plus-icon">+</span>
+      </button>
+
+      <button type="button" class="nav-action-btn" id="nav-btn-members" aria-label="Manage Members">
+        <span class="nav-btn-icon">👥</span>
+        <span class="nav-btn-label">Members</span>
+      </button>
+    </nav>
+
+    <!-- App Legal & Privacy Footer: Home Indicator Aware -->
+    <footer class="app-legal-footer">
+      <span class="legal-footer-text">FairSplit • Offline &amp; Private • Free Hobby App</span>
+      <button type="button" class="legal-notice-btn" id="btn-open-legal">Legal &amp; Privacy</button>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

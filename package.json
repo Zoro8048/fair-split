@@ -1,0 +1,26 @@
+{
+  "name": "fairsplit",
+  "version": "1.0.0",
+  "description": "Zero-backend, P2P expense splitter with min-cash-flow debt simplification and camera QR-code ledger sync.",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/bundle.js && node --test tests/*.test.js",
+    "build": "node scripts/bundle.js",
+    "start": "npx -y serve . -p 8080"
+  },
+  "keywords": [
+    "expense-splitter",
+    "group-expenses",
+    "bill-splitter",
+    "min-cash-flow",
+    "debt-simplification",
+    "p2p-sync",
+    "offline-pwa",
+    "local-first"
+  ],
+  "author": "Keerthan",
+  "license": "MIT",
+  "dependencies": {
+    "ios-pwa-foundation": "git+https://github.com/Zoro8048/ios-pwa-foundation.git#v1.0.0"
+  }
+}

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141c2b"/>
+      <stop offset="50%" stop-color="#0a0f18"/>
+      <stop offset="100%" stop-color="#03060a"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#30d158"/>
+      <stop offset="100%" stop-color="#0a84ff"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64d2ff"/>
+      <stop offset="100%" stop-color="#30d158"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="111" fill="none" stroke="rgba(255, 255, 255, 0.12)" stroke-width="2"/>
+
+  <!-- Subtle Inner Radial Glow -->
+  <circle cx="256" cy="230" r="180" fill="url(#accentGrad)" opacity="0.12" filter="blur(30px)"/>
+
+  <!-- Balance Scales / Split Icon Motif -->
+  <g filter="url(#shadow)">
+    <!-- Central Pivot Fulcrum -->
+    <path d="M256 120 V 380" stroke="#94a3b8" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="256" cy="120" r="18" fill="url(#glowGrad)"/>
+    <path d="M200 380 H 312" stroke="#94a3b8" stroke-width="16" stroke-linecap="round"/>
+
+    <!-- Balance Crossbar -->
+    <path d="M130 180 Q 256 160 382 180" stroke="url(#accentGrad)" stroke-width="18" stroke-linecap="round" fill="none"/>
+
+    <!-- Left Pan -->
+    <path d="M130 180 L 100 270 M 130 180 L 160 270" stroke="rgba(255, 255, 255, 0.45)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M80 270 C 80 305 180 305 180 270 Z" fill="url(#accentGrad)"/>
+
+    <!-- Right Pan -->
+    <path d="M382 180 L 352 270 M 382 180 L 412 270" stroke="rgba(255, 255, 255, 0.45)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M332 270 C 332 305 432 305 432 270 Z" fill="url(#glowGrad)"/>
+
+    <!-- Stylized Split Currency Emblem (Center) -->
+    <circle cx="256" cy="256" r="38" fill="#141c2b" stroke="url(#glowGrad)" stroke-width="8"/>
+    <text x="256" y="271" font-family="-apple-system, system-ui, sans-serif" font-weight="900" font-size="44" fill="#30d158" text-anchor="middle">÷</text>
+  </g>
+</svg>
