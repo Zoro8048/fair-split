@@ -5,7 +5,6 @@ import {
   EventBus,
   StorageManager,
   AudioHaptics,
-  CameraService,
   ShareService,
   BottomSheet,
   SegmentedControl,
@@ -13,8 +12,11 @@ import {
   LegalNoticeSheet,
 } from 'ios-pwa-foundation';
 
+import { CameraService } from './services/CameraService.js';
+
 import { ExpenseLedger, CATEGORIES } from './domain/ExpenseLedger.js';
 import { DebtSimplifier } from './domain/DebtSimplifier.js';
+import { QrSyncEngine } from './domain/QrSyncEngine.js';
 import { ExpenseSheet } from './ui/ExpenseSheet.js';
 import { MemberSheet } from './ui/MemberSheet.js';
 import { SettleSheet } from './ui/SettleSheet.js';
@@ -80,11 +82,36 @@ class FairSplitApp {
   init() {
     this._initSegmentedControl();
     this._bindGlobalEvents();
+    this._checkUrlImport();
     this._render();
 
     this.bus.on('ledger:updated', () => {
       this._render();
     });
+  }
+
+  _checkUrlImport() {
+    if (typeof window === 'undefined' || !window.location || !window.location.hash) return;
+    const hash = window.location.hash;
+    if (hash.startsWith('#import=') || hash.startsWith('#sync=')) {
+      const payloadString = decodeURIComponent(hash.replace(/^#(?:import|sync)=/, ''));
+      const res = QrSyncEngine.deserializeGroup(payloadString);
+      if (res.success && res.group) {
+        const existingIdx = this.ledger.state.groups.findIndex((g) => g.id === res.group.id);
+        if (existingIdx >= 0) {
+          this.ledger.state.groups[existingIdx] = res.group;
+        } else {
+          this.ledger.state.groups.push(res.group);
+        }
+        this.ledger.state.activeGroupId = res.group.id;
+        this.ledger.save();
+        if (this.audio) this.audio.success();
+        this.toast.show(`Imported group "${res.group.name}"!`, { type: 'success' });
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch {}
+      }
+    }
   }
 
   _initSegmentedControl() {

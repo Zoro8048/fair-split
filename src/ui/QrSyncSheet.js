@@ -14,7 +14,8 @@ export class QrSyncSheet {
 
   show() {
     const group = this.ledger.getActiveGroup();
-    const qrPayload = QrSyncEngine.serializeGroup(group);
+    const shareableUrl = QrSyncEngine.getShareableUrl(group);
+    const jsonPayload = QrSyncEngine.serializeGroup(group);
 
     this.sheet.show({
       title: 'Peer-to-Peer Sync',
@@ -33,11 +34,14 @@ export class QrSyncSheet {
               <canvas id="qr-display-canvas"></canvas>
             </div>
             <p class="qr-tip-text">
-              Have a friend open FairSplit and tap <strong>Scan Friend's QR</strong> to instantly import this group ledger.
+              Point any smartphone camera (iPhone / Android) at this QR code to open and import this group instantly.
             </p>
-            <div style="display:flex; gap:0.5rem; width:100%; margin-top:0.5rem;">
-              <button type="button" class="btn-sm-primary" id="btn-copy-sync-code" style="flex:1;">
-                📋 Copy Sync Text
+            <div style="display:flex; gap:0.5rem; width:100%; margin-top:0.75rem;">
+              <button type="button" class="btn-sm-primary" id="btn-copy-sync-link" style="flex:1;">
+                🔗 Copy Web Link
+              </button>
+              <button type="button" class="btn-sm-primary" id="btn-copy-sync-code" style="flex:1; background: rgba(255,255,255,0.12);">
+                📄 Copy JSON Code
               </button>
             </div>
           </div>
@@ -51,9 +55,9 @@ export class QrSyncSheet {
             <p class="qr-tip-text">Point camera at the QR code on your friend's screen</p>
 
             <div class="manual-code-fallback" style="margin-top:1rem; width:100%;">
-              <label class="ios-form-label" for="inp-manual-sync">Or Paste Sync Code</label>
+              <label class="ios-form-label" for="inp-manual-sync">Or Paste Sync Code / Link</label>
               <div style="display:flex; gap:0.4rem;">
-                <input type="text" id="inp-manual-sync" class="ios-input" placeholder="Paste JSON code here..." />
+                <input type="text" id="inp-manual-sync" class="ios-input" placeholder="Paste URL or JSON code here..." />
                 <button type="button" class="btn-sm-primary" id="btn-submit-manual-sync">Import</button>
               </div>
             </div>
@@ -66,20 +70,30 @@ export class QrSyncSheet {
         const secShow = sheetEl.querySelector('#section-show-qr');
         const secScan = sheetEl.querySelector('#section-scan-qr');
         const canvas = sheetEl.querySelector('#qr-display-canvas');
-        const copyBtn = sheetEl.querySelector('#btn-copy-sync-code');
+        const copyLinkBtn = sheetEl.querySelector('#btn-copy-sync-link');
+        const copyCodeBtn = sheetEl.querySelector('#btn-copy-sync-code');
         const videoEl = sheetEl.querySelector('#qr-scanner-video');
         const manualInput = sheetEl.querySelector('#inp-manual-sync');
         const manualBtn = sheetEl.querySelector('#btn-submit-manual-sync');
 
-        // Render QR to canvas
-        QrSyncEngine.renderToCanvas(canvas, qrPayload, 260);
+        // Render ISO QR Code to canvas with shareable URL
+        QrSyncEngine.renderToCanvas(canvas, shareableUrl, 260);
 
-        // Copy sync code
-        copyBtn.addEventListener('click', async () => {
+        // Copy direct link
+        copyLinkBtn.addEventListener('click', async () => {
           if (navigator.clipboard) {
-            await navigator.clipboard.writeText(qrPayload);
+            await navigator.clipboard.writeText(shareableUrl);
             if (this.audio) this.audio.tap();
-            this.toast.show('Copied sync code to clipboard!', { type: 'success' });
+            this.toast.show('Copied shareable link to clipboard!', { type: 'success' });
+          }
+        });
+
+        // Copy raw JSON
+        copyCodeBtn.addEventListener('click', async () => {
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(jsonPayload);
+            if (this.audio) this.audio.tap();
+            this.toast.show('Copied sync JSON code to clipboard!', { type: 'success' });
           }
         });
 
@@ -108,7 +122,8 @@ export class QrSyncSheet {
               },
             });
           } catch (err) {
-            this.toast.show('Camera unavailable; paste code manually below.', { type: 'warning' });
+            console.warn('[QrSyncSheet] Camera start failed:', err);
+            this.toast.show('Camera access unavailable; paste code manually below.', { type: 'warning' });
           }
         });
 

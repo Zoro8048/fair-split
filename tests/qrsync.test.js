@@ -71,4 +71,14 @@ describe('QrSyncEngine - Zero-Backend P2P Sync', () => {
     const missingFields = QrSyncEngine.deserializeGroup(JSON.stringify({ app: 'otherApp' }));
     assert.equal(missingFields.success, false);
   });
+
+  test('deserializeGroup accepts direct web URL with #import= parameter', () => {
+    const url = QrSyncEngine.getShareableUrl(sampleGroup);
+    assert.ok(url.includes('#import='));
+
+    const result = QrSyncEngine.deserializeGroup(url);
+    assert.equal(result.success, true);
+    assert.equal(result.group.name, 'Hawaii Vacation');
+    assert.equal(result.group.members.length, 2);
+  });
 });

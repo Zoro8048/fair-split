@@ -1,9 +1,10 @@
 /**
  * QrSyncEngine - Peer-to-Peer Zero-Server Ledger Sync via Compressed QR Code & Camera.
  *
- * Includes a lightweight, pure-JavaScript QR matrix generator to render QR codes directly
- * onto HTML5 Canvas without any external npm packages.
+ * Employs standard ISO/IEC 18004 QR generation with Reed-Solomon error correction
+ * and quiet zones so any smartphone camera or in-app viewfinder scans it reliably.
  */
+import qrcode from 'qrcode-generator';
 
 export class QrSyncEngine {
   /**
@@ -23,7 +24,7 @@ export class QrSyncEngine {
         a: e.amount,
         p: e.paidBy,
         c: e.category,
-        d: e.date,
+        d: e.date ? e.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
         s: e.splits,
       })),
       settlements: (group.settlements || []).map((s) => ({
@@ -31,7 +32,7 @@ export class QrSyncEngine {
         f: s.from,
         t: s.to,
         a: s.amount,
-        d: s.date,
+        d: s.date ? s.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
       })),
     };
 
@@ -39,10 +40,38 @@ export class QrSyncEngine {
   }
 
   /**
-   * Deserializes and validates a scanned QR payload.
+   * Generates a direct Web Link containing the import payload.
+   * When scanned by the native iOS/Android camera, it opens Safari/Chrome and imports automatically.
    */
-  static deserializeGroup(jsonString) {
+  static getShareableUrl(group) {
+    const json = QrSyncEngine.serializeGroup(group);
+    if (typeof window !== 'undefined' && window.location && window.location.origin) {
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      return `${origin}${pathname}#import=${encodeURIComponent(json)}`;
+    }
+    return `https://zoro8048.github.io/fairsplit/#import=${encodeURIComponent(json)}`;
+  }
+
+  /**
+   * Deserializes and validates a scanned QR payload (supports raw JSON or #import= URL).
+   */
+  static deserializeGroup(inputString) {
     try {
+      if (!inputString || typeof inputString !== 'string') {
+        throw new Error('Input payload must be a non-empty string');
+      }
+
+      let jsonString = inputString.trim();
+
+      // If scanned as a URL containing #import= or #sync=
+      if (jsonString.includes('#import=') || jsonString.includes('#sync=')) {
+        const hashMatch = jsonString.match(/#(?:import|sync)=(.+)$/);
+        if (hashMatch && hashMatch[1]) {
+          jsonString = decodeURIComponent(hashMatch[1]);
+        }
+      }
+
       const parsed = JSON.parse(jsonString);
       if (!parsed || parsed.app !== 'fairsplit' || !parsed.name || !Array.isArray(parsed.members)) {
         throw new Error('Invalid FairSplit QR format');
@@ -81,8 +110,7 @@ export class QrSyncEngine {
   }
 
   /**
-   * Renders QR Code or High-Density Barcode Matrix to HTML5 Canvas.
-   * If string exceeds standard density, renders a clean QR matrix or fallback QR visual.
+   * Renders ISO/IEC 18004 Standard QR Code to HTML5 Canvas with quiet margin.
    */
   static renderToCanvas(canvas, text, size = 260) {
     if (!canvas) return;
@@ -90,109 +118,52 @@ export class QrSyncEngine {
     canvas.width = size;
     canvas.height = size;
 
+    // Resolve qrcode generator function (module or global)
+    const qrGenerator = typeof qrcode !== 'undefined'
+      ? qrcode
+      : (typeof window !== 'undefined' && window.qrcode ? window.qrcode : null);
+
+    if (qrGenerator) {
+      try {
+        // type 0 = auto-select version (1..40) based on payload length
+        // Error correction: 'L' (Low 7%) to keep cell sizes large and effortless to scan
+        const qr = qrGenerator(0, 'L');
+        qr.addData(text);
+        qr.make();
+
+        const moduleCount = qr.getModuleCount();
+        const margin = 2; // quiet zone modules
+        const totalModules = moduleCount + margin * 2;
+        const cellSize = size / totalModules;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+
+        ctx.fillStyle = '#000000';
+        for (let row = 0; row < moduleCount; row++) {
+          for (let col = 0; col < moduleCount; col++) {
+            if (qr.isDark(row, col)) {
+              ctx.fillRect(
+                Math.floor((col + margin) * cellSize),
+                Math.floor((row + margin) * cellSize),
+                Math.ceil(cellSize),
+                Math.ceil(cellSize)
+              );
+            }
+          }
+        }
+        return;
+      } catch (err) {
+        console.warn('[QrSyncEngine] QR generation error:', err);
+      }
+    }
+
+    // Fallback display if QR generator fails
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, size, size);
-
-    // Procedural high-contrast matrix representation for data encoding
-    const matrix = MinimalQR.encode(text);
-    const moduleCount = matrix.length;
-    const cellSize = (size - 32) / moduleCount;
-    const margin = 16;
-
-    ctx.fillStyle = '#000000';
-    for (let row = 0; row < moduleCount; row++) {
-      for (let col = 0; col < moduleCount; col++) {
-        if (matrix[row][col]) {
-          ctx.fillRect(
-            Math.round(margin + col * cellSize),
-            Math.round(margin + row * cellSize),
-            Math.ceil(cellSize),
-            Math.ceil(cellSize)
-          );
-        }
-      }
-    }
-  }
-}
-
-/**
- * MinimalQR - Compact pure JS QR Code Matrix Generator (Byte Mode, ECL-L).
- */
-class MinimalQR {
-  static encode(text) {
-    // Generate standard QR code grid with finder patterns, timing patterns and payload bytes
-    const N = 33; // Version 4 (33x33 matrix)
-    const grid = Array.from({ length: N }, () => Array(N).fill(0));
-    const isFunction = Array.from({ length: N }, () => Array(N).fill(false));
-
-    const setBox = (r, c, size, val, isFunc = true) => {
-      for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-          if (r + y < N && c + x < N) {
-            grid[r + y][c + x] = val;
-            if (isFunc) isFunction[r + y][c + x] = true;
-          }
-        }
-      }
-    };
-
-    const drawFinder = (r, c) => {
-      setBox(r, c, 7, 1);
-      setBox(r + 1, c + 1, 5, 0);
-      setBox(r + 2, c + 2, 3, 1);
-    };
-
-    // 1. Finder patterns (Top-left, top-right, bottom-left)
-    drawFinder(0, 0);
-    drawFinder(0, N - 7);
-    drawFinder(N - 7, 0);
-
-    // 2. Timing patterns
-    for (let i = 8; i < N - 8; i++) {
-      grid[6][i] = i % 2 === 0 ? 1 : 0;
-      grid[i][6] = i % 2 === 0 ? 1 : 0;
-      isFunction[6][i] = true;
-      isFunction[i][6] = true;
-    }
-
-    // 3. Alignment pattern (for Version 4 at 26,26)
-    const alignX = 26;
-    const alignY = 26;
-    setBox(alignY - 2, alignX - 2, 5, 1);
-    setBox(alignY - 1, alignX - 1, 3, 0);
-    grid[alignY][alignX] = 1;
-
-    // 4. Encode data bits
-    const bytes = new TextEncoder().encode(text);
-    let byteIdx = 0;
-    let bitIdx = 7;
-
-    for (let col = N - 1; col > 0; col -= 2) {
-      if (col === 6) col--; // Skip vertical timing column
-      for (let count = 0; count < N; count++) {
-        for (let c = 0; c < 2; c++) {
-          const x = col - c;
-          const y = (Math.floor((N - 1 - col) / 2) % 2 === 0) ? N - 1 - count : count;
-
-          if (!isFunction[y][x]) {
-            let bit = 0;
-            if (byteIdx < bytes.length) {
-              bit = (bytes[byteIdx] >> bitIdx) & 1;
-              bitIdx--;
-              if (bitIdx < 0) {
-                bitIdx = 7;
-                byteIdx++;
-              }
-            } else {
-              // Padding pseudo-random mask
-              bit = (x + y) % 2 === 0 ? 1 : 0;
-            }
-            grid[y][x] = bit;
-          }
-        }
-      }
-    }
-
-    return grid;
+    ctx.fillStyle = '#ff453a';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR Generator Failed', size / 2, size / 2);
   }
 }

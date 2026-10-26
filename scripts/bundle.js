@@ -12,10 +12,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 
 const MODULE_ORDER = [
+  'node_modules/qrcode-generator/dist/qrcode.js',
+  'node_modules/jsqr/dist/jsQR.js',
   'node_modules/ios-pwa-foundation/src/core/EventBus.js',
   'node_modules/ios-pwa-foundation/src/core/StorageManager.js',
   'node_modules/ios-pwa-foundation/src/hardware/AudioHaptics.js',
-  'node_modules/ios-pwa-foundation/src/hardware/CameraService.js',
+  'src/services/CameraService.js',
   'node_modules/ios-pwa-foundation/src/hardware/ShareService.js',
   'node_modules/ios-pwa-foundation/src/ui/BottomSheet.js',
   'node_modules/ios-pwa-foundation/src/ui/SegmentedControl.js',
@@ -48,6 +50,7 @@ const chunks = [
   ' */',
   '(() => {',
   '  "use strict";',
+  '  const self = typeof window !== "undefined" ? window : globalThis;',
 ];
 
 for (const relPath of MODULE_ORDER) {
